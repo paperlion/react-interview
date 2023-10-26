@@ -55,7 +55,7 @@ const PopupButton = (props, key) => {
         else {
             timer = setTimeout(() => {
                 setOpen(false);
-            }, 200);
+            }, 300);
         }
         return () => {
             clearTimeout(timer);
@@ -134,7 +134,7 @@ function App() {
                 justifyContent: 'start',
                 gap: '10px',
                 width: {
-                    md: '100vw',
+                    md: '100%',
                     xs: '900px'
                 },
             }}>
