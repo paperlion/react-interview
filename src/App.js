@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Grid, Typography, List, Link, Button, Popover } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Link, Button, Popover } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 const config = {
@@ -20,43 +20,105 @@ const config = {
 }
 
 
-const PopupButton = (props) => {
-    const { title, content, ...rest } = props;
+const PopupButton = (props, key) => {
+    const { title, content} = props;
 
     const [anchorEl, setAnchorEl] = useState(null);
+    const [open, setOpen] = useState(false);
+    const [inButton, setInButton] = useState(false);
+    const [inPopover, setInPopover] = useState(false);
 
-    const handleClick = (event) => {
+    const handleEnterButton = (event) => {
         setAnchorEl(event.currentTarget);
+        setInButton(true);
     };
 
-    const handleClose = () => {
-        setAnchorEl(null);
+    const handleLeaveButton = (event) => {
+        setInButton(false);
     };
 
-    const open = Boolean(anchorEl);
+    const handleEnterPopover = (event) => {
+        setInPopover(true);
+    };
 
-    return (<React.Fragment>
-        <Button onClick={handleClick}
+    const handleExitPopover = (event) => {
+        setInPopover(false);
+    };
+
+    // the popover will be shown either the mouse enter the button or enter the paper
+    // when mouse leave both component, hide the popover 500 ms
+    useEffect(() => {
+        let timer = null;
+        if (inButton | inPopover) {
+            setOpen(true);
+        }
+        else {
+            timer = setTimeout(() => {
+                setOpen(false);
+            }, 200);
+        }
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [inButton, inPopover]);
+
+    return (<div>
+        <Button aria-owns={open ? `ship-to-popover-${key}` : undefined}
+            aria-haspopup="true"
+            onMouseOver={handleEnterButton}
+            onClick={handleEnterButton}
+            onMouseLeave={handleLeaveButton}
             sx={{
+                position:'relative',
                 textTransform: 'none',
                 padding: 0,
+                zIndex: 5,
             }}>
             {title}
             <ArrowDropDownIcon sx={{
                 color: 'gray',
             }} />
         </Button>
-        <Popover
+        <Popover id={`ship-to-popover-${key}`}
             open={open}
             anchorEl={anchorEl}
-            onClose={handleClose}
+            
             anchorOrigin={{
                 vertical: 'bottom',
                 horizontal: 'left',
-            }}>
-            {content}
+            }}
+
+            sx={{
+                zIndex: 4,
+            }}
+            marginThreshold={-1000}
+
+            disableScrollLock
+            disableRestoreFocus
+        >
+            <Box 
+                onMouseEnter={handleEnterPopover}
+                onMouseLeave={handleExitPopover}
+            >
+                {content}
+            </Box>
         </Popover>
-    </React.Fragment>)
+    </div>)
+}
+
+
+const classes = {
+    orderTitle: {
+        color: '#565959',
+        fontFamily: 'Arial,sans-serif',
+        fontSize: '12px',
+    },
+
+    orderValue: {
+        color: '#565959',
+        fontFamily: 'Arial,sans-serif',
+        fontSize: '14px',
+    }
 }
 
 function App() {
@@ -71,21 +133,24 @@ function App() {
                 alignItems: 'center',
                 justifyContent: 'start',
                 gap: '10px',
-                width: '100vw',
-
+                width: {
+                    md: '100vw',
+                    xs: '900px'
+                },
             }}>
-                {invoices.map((invoice) => {
+                {invoices.map((invoice, index) => {
 
-                    const { id, created_at, total_price, items, status, full_name, address1, address2, city, state, zipcode } = invoice;
+                    const { id, created_at, total_price, items, full_name, address1, address2, city, state, zipcode } = invoice;
 
                     return (
-                        <Box sx={{
-                            display: 'felx',
+                        <Box key={`invoice-${index}`}
+                            sx={{
+                            display: 'flex',
                             flexDirection: 'column',
-                            alignItems: 'center',
+                            alignItems: 'stretch',
                             justifyContent: 'start',
                             border: '1px solid silver',
-                            width: '80vw',
+                            width: '900px',
                             marginBottom: '10px',
                             borderRadius: '10px',
                         }}>
@@ -95,18 +160,19 @@ function App() {
                                 flexDirection: 'row',
                                 backgroundColor: '#EEE',
                                 borderRadius: '10px 10px 0 0',
-                                padding: '10px',
+                                padding: '12px',
+                                paddingLeft: '15px',
+                                paddingRight: '15px',
                             }}>
                                 <Box sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    margin: '5px',
                                     marginRight: '30px',
                                 }}>
-                                    <Typography>
+                                    <Typography sx={classes.orderTitle}>
                                         ORDER PLACED
                                     </Typography>
-                                    <Typography>
+                                    <Typography sx={classes.orderValue}>
                                         {created_at}
                                     </Typography>
                                 </Box>
@@ -114,29 +180,29 @@ function App() {
                                 <Box sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    margin: '5px',
                                     marginRight: '30px',
                                 }}>
-                                    <Typography>
+                                    <Typography sx={classes.orderTitle}>
                                         TOTAL
                                     </Typography>
-                                    <Typography>
+                                    <Typography sx={classes.orderValue}>
                                         {`$${total_price}`}
                                     </Typography>
                                 </Box>
                                 <Box sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    margin: '5px',
-                                    marginRight: '30px',
                                 }}>
-                                    <Typography>
+                                    <Typography sx={classes.orderTitle}>
                                         SHIP TO
                                     </Typography>
-                                    <PopupButton title={full_name} content={
+                                    <PopupButton key={`popover-${index}` } title={full_name} content={
                                         <Box sx={{
                                             padding: '15px',
-                                        } }>
+                                        }}>
+                                            <Typography>
+                                                {full_name}
+                                            </Typography>
                                             <Typography>
                                                 {address1}
                                             </Typography>
@@ -158,9 +224,8 @@ function App() {
                                     flexDirection: 'column',
                                     flexGrow: 1,
                                     textAlign: 'right',
-                                    margin: '5px',
                                 }}>
-                                    <Typography>
+                                    <Typography sx={classes.orderTitle}>
                                         {`ORDER #${id}`}
                                     </Typography>
                                     <Link sx={{
@@ -171,17 +236,15 @@ function App() {
                                 </Box>
                             </Box>
                             {
-                                items.map((item) => {
+                                items.map((item, index) => {
 
                                     const { product_name, price, image_url, quantity } = item;
 
                                     return (
-                                        <Box sx={{
+                                        <Box key={`item-${index}`}
+                                            sx={{
                                             display: 'flex',
-                                            flexDirection: {
-                                                xs: 'column',
-                                                md: 'row'
-                                            },
+                                            flexDirection: 'row',
                                             alignItems: 'center',
                                             minHeight: '200px',
                                             borderTop: '1px solid silver',
@@ -196,28 +259,22 @@ function App() {
                                             <Box sx={{
                                                 display: 'flex',
                                                 flexDirection: 'column',
-                                                marginLeft: {
-                                                    xs: '0',
-                                                    md: '30px'
-                                                },
-                                                marginBottom: {
-                                                    xs: '40px',
-                                                    md: '0'
-                                                },
+                                                marginLeft: '30px',
                                             }}>
                                                 <Typography sx={{
-                                                    fontSize: '2.2rem',
+                                                    fontSize: '30px',
+                                                    marginBottom: '15px'
                                                 }}>
                                                     {product_name}
                                                 </Typography>
                                                 <Typography sx={{
-                                                    fontSize: '1.5rem',
+                                                    fontSize: '20px',
                                                     color: 'gray',
                                                 }}>
                                                     {`Quantity: ${quantity}`}
                                                 </Typography>
                                                 <Typography sx={{
-                                                    fontSize: '1.5rem',
+                                                    fontSize: '20px',
                                                     color: 'gray',
                                                 }}>
                                                     {`Total: $ ${price}`}
