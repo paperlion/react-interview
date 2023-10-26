@@ -45,8 +45,8 @@ const PopupButton = (props, key) => {
         setInPopover(false);
     };
 
-    // the popover will be shown either the mouse enter the button or enter the paper
-    // when mouse leave both component, hide the popover 500 ms
+    // the popover will be shown either the mouse enter the button or enter the popover paper
+    // when mouse leave both components, hide the popover after several time
     useEffect(() => {
         let timer = null;
         if (inButton | inPopover) {
